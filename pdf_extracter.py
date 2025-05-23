@@ -7,16 +7,14 @@ from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
-
-# ────────────────────────────────────────────────────────────────────────
 # Configure logging
-# ────────────────────────────────────────────────────────────────────────
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# ────────────────────────────────────────────────────────────────────────
+
 # Utility: Clean and normalize table cells
-# ────────────────────────────────────────────────────────────────────────
+
 def clean_cell(cell) -> str:
     """
     Convert a cell value to a clean string, handling None values and whitespace.
@@ -43,9 +41,9 @@ def clean_table(table: List[List[Any]]) -> List[List[str]]:
     
     return cleaned_table
 
-# ────────────────────────────────────────────────────────────────────────
+
 # Utility: Get table dimensions and stats
-# ────────────────────────────────────────────────────────────────────────
+
 def get_table_stats(table: List[List[Any]]) -> Dict[str, Any]:
     """
     Analyzes a table and returns useful statistics about it.
@@ -95,9 +93,9 @@ def get_table_stats(table: List[List[Any]]) -> Dict[str, Any]:
         "cleaned_table": non_empty_rows
     }
 
-# ────────────────────────────────────────────────────────────────────────
+
 # Utility: Convert table to formatted text with tags
-# ────────────────────────────────────────────────────────────────────────
+
 def format_table_with_tags(
     table_rows: List[List[str]],
     start_page: int,
@@ -143,9 +141,9 @@ def format_table_with_tags(
     
     return f"<TABLE_START id='{table_id}' page='{start_page}' rows='{len(filtered_rows)}' cols='{max_cols}'>\n{formatted_table}\n<TABLE_END id='{table_id}'>"
 
-# ────────────────────────────────────────────────────────────────────────
+
 # Heuristic: Determine if a table on this page is a continuation of the previous one
-# ────────────────────────────────────────────────────────────────────────
+
 def is_continuation_of(prev_table_stats: Optional[Dict[str, Any]], current_table: List[List[Any]]) -> bool:
     """
     Returns True if 'current_table' likely belongs to the same logical table that 
@@ -175,9 +173,9 @@ def is_continuation_of(prev_table_stats: Optional[Dict[str, Any]], current_table
     # Made it past all checks - likely a continuation
     return True
 
-# ────────────────────────────────────────────────────────────────────────
+
 # Utility: Sort tables by vertical position
-# ────────────────────────────────────────────────────────────────────────
+
 def sort_tables_by_position(page, tables):
     """
     Sort tables based on their vertical position on the page.
@@ -210,9 +208,9 @@ def sort_tables_by_position(page, tables):
         logger.warning(f"Could not sort tables by position: {e}. Using original order.")
         return tables
 
-# ────────────────────────────────────────────────────────────────────────
+
 # Validate PDF exists and is readable
-# ────────────────────────────────────────────────────────────────────────
+
 def validate_pdf(pdf_path: str) -> bool:
     """
     Check if PDF file exists and is readable.
@@ -233,9 +231,9 @@ def validate_pdf(pdf_path: str) -> bool:
         logger.error(f"Cannot open PDF: {pdf_path}. Error: {e}")
         return False
 
-# ────────────────────────────────────────────────────────────────────────
+
 # Main processing: extract text + handle tables (with multi‐page continuity)
-# ────────────────────────────────────────────────────────────────────────
+
 def process_pdf(pdf_path: str) -> Dict[str, Any]:
     """
     Process PDF with table tagging (no LLM processing).
@@ -263,9 +261,9 @@ def process_pdf(pdf_path: str) -> Dict[str, Any]:
             for page_number, page in enumerate(pdf.pages, start=1):
                 logger.info(f"Processing page {page_number}/{total_pages}")
 
-                # ───────────────────────────────────────────────────────────────────
+                
                 # 1. Extract raw text of this page
-                # ───────────────────────────────────────────────────────────────────
+                
                 try:
                     raw_text = page.extract_text() or ""
                     if not raw_text.strip():
@@ -274,9 +272,9 @@ def process_pdf(pdf_path: str) -> Dict[str, Any]:
                     logger.error(f"Error extracting text from page {page_number}: {e}")
                     raw_text = f"[Error extracting text from page {page_number}: {str(e)}]"
 
-                # ───────────────────────────────────────────────────────────────────
+                
                 # 2. Extract and sort tables on this page
-                # ───────────────────────────────────────────────────────────────────
+                
                 current_page_tables = []
                 try:
                     extracted_tables = page.extract_tables()
@@ -287,9 +285,9 @@ def process_pdf(pdf_path: str) -> Dict[str, Any]:
                     logger.error(f"Error extracting tables from page {page_number}: {e}")
                     current_page_tables = []
 
-                # ───────────────────────────────────────────────────────────────────
+                
                 # 3. Handle table continuation logic
-                # ───────────────────────────────────────────────────────────────────
+                
                 if ongoing_table_rows and current_page_tables:
                     # Check if first table on this page continues the previous table
                     first_table = current_page_tables[0]
@@ -313,9 +311,9 @@ def process_pdf(pdf_path: str) -> Dict[str, Any]:
                         ongoing_table_start = None
                         ongoing_table_stats = None
 
-                # ───────────────────────────────────────────────────────────────────
+                
                 # 4. Process tables on this page
-                # ───────────────────────────────────────────────────────────────────
+                
                 for table_idx, tbl in enumerate(current_page_tables):
                     try:
                         # Get statistics about this table
@@ -357,9 +355,9 @@ def process_pdf(pdf_path: str) -> Dict[str, Any]:
                         logger.error(f"Error processing table {table_idx + 1} on page {page_number}: {e}")
                         continue
 
-                # ───────────────────────────────────────────────────────────────────
+                
                 # 5. Add page text as a chunk
-                # ───────────────────────────────────────────────────────────────────
+                
                 if raw_text.strip():
                     combined_chunks.append({
                         "content": raw_text.strip(),
@@ -367,9 +365,9 @@ def process_pdf(pdf_path: str) -> Dict[str, Any]:
                         "chunk_type": "text",
                     })
 
-            # ─────────────────────────────────────────────────────────────────────
+            
             # 6. Finalize any remaining ongoing table
-            # ─────────────────────────────────────────────────────────────────────
+            
             if ongoing_table_rows:
                 table_counter += 1
                 logger.info(f"Finalizing final table {table_counter} that started on page {ongoing_table_start}")
@@ -394,9 +392,9 @@ def process_pdf(pdf_path: str) -> Dict[str, Any]:
             "error": f"Critical error processing PDF: {str(e)}"
         }
 
-    # ────────────────────────────────────────────────────────────────────────
+    
     # 7. Build combined text and pages map
-    # ────────────────────────────────────────────────────────────────────────
+    
     combined_text = ""
     pages_map: List[Dict[str, Any]] = []
 
@@ -427,9 +425,9 @@ def process_pdf(pdf_path: str) -> Dict[str, Any]:
         "chunks": combined_chunks,
     }
 
-# ────────────────────────────────────────────────────────────────────────
+
 # Save outputs (combined text + pages map) to disk
-# ────────────────────────────────────────────────────────────────────────
+
 def save_outputs(
     combined_text: str,
     pages_map: List[Dict[str, Any]],
@@ -450,9 +448,9 @@ def save_outputs(
     except Exception as e:
         logger.error(f"Failed writing pages map: {e}")
 
-# ────────────────────────────────────────────────────────────────────────
+
 # Entry point
-# ────────────────────────────────────────────────────────────────────────
+
 def main():
     # Get PDF path from environment variable or use default
     pdf_path = os.environ.get("PDF_PATH", "C:/Users/tejup/Downloads/extraction_purpose2.pdf")
