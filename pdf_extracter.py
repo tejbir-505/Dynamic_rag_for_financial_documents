@@ -3,10 +3,10 @@ import pdfplumber
 import logging
 from typing import List, Dict, Any, Optional
 import json
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+# load_dotenv()
 # Configure logging
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
