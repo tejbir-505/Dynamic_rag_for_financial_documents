@@ -1,0 +1,77 @@
+[
+  {
+    "page_number": 1,
+    "chunk_type": "text",
+    "start_char": 0,
+    "end_char": 4550
+  },
+  {
+    "page_number": 2,
+    "chunk_type": "text",
+    "start_char": 4550,
+    "end_char": 8228
+  },
+  {
+    "page_number": 3,
+    "chunk_type": "text",
+    "start_char": 8228,
+    "end_char": 10232
+  },
+  {
+    "page_number": 4,
+    "chunk_type": "text",
+    "start_char": 10232,
+    "end_char": 14628
+  },
+  {
+    "page_number": 5,
+    "chunk_type": "text",
+    "start_char": 14628,
+    "end_char": 20004
+  },
+  {
+    "page_number": 6,
+    "chunk_type": "text",
+    "start_char": 20004,
+    "end_char": 25460
+  },
+  {
+    "page_number": 7,
+    "chunk_type": "text",
+    "start_char": 25460,
+    "end_char": 27046
+  },
+  {
+    "page_number": 2,
+    "chunk_type": "table",
+    "start_char": 27046,
+    "end_char": 30860,
+    "table_id": "table_1"
+  },
+  {
+    "page_number": 8,
+    "chunk_type": "text",
+    "start_char": 30860,
+    "end_char": 32738
+  },
+  {
+    "page_number": 8,
+    "chunk_type": "table",
+    "start_char": 32738,
+    "end_char": 33114,
+    "table_id": "table_2"
+  },
+  {
+    "page_number": 9,
+    "chunk_type": "text",
+    "start_char": 33114,
+    "end_char": 34865
+  },
+  {
+    "page_number": 9,
+    "chunk_type": "table",
+    "start_char": 34865,
+    "end_char": 35787,
+    "table_id": "table_3"
+  }
+]
