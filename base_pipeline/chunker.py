@@ -20,7 +20,6 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-# Load environment variables
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
@@ -99,14 +98,17 @@ class SemanticChunker:
         system_prompt = """You are an expert document analyzer. Your task is to identify semantically cohesive sections in a document.
 
 Instructions:
-1. Analyze the provided text that has sentences numbered as <1>, <2>, etc.
-2. Identify sections that are semantically cohesive (related topics, themes, or concepts)
-3. Each section should be substantial (few paragraphs to few pages)
-4. Provide the starting and ending sentence numbers for each section
-5. Generate a descriptive title for each section that captures its main topic/theme
-6. Ensure sections don't overlap and cover the entire document
+1. Analyze the provided text where each sentence is annotated with a unique number in the format <1>, <2>, etc.
+2. The text may include table data represented in plain text (i.e., without clear rows/columns). Identify and treat such content carefully while determining cohesive topics.
+3. Identify groups of sentences that form semantically cohesive sections (i.e., related topics, concepts, or themes).
+4. Each section should be substantial, ideally covering a few paragraphs to a few pages worth of content.
+5. For each section, provide:
+   - The starting sentence number
+   - The ending sentence number
+   - A short but descriptive title that reflects the section’s main theme
+6. Ensure the entire document is covered without overlaps between sections.
 
-Return your response as a JSON array with this exact format:
+Return your output strictly in the following JSON format:
 [
     {
         "start_sentence": 1,
@@ -120,7 +122,7 @@ Return your response as a JSON array with this exact format:
     }
 ]
 
-Only return the JSON array, no additional text."""
+Only return the JSON array, no additional explanation or commentary."""
 
         user_prompt = f"Document Title: {document_title}\n\nEnumerated Text:\n{enumerated_text}"
         
@@ -157,7 +159,7 @@ Only return the JSON array, no additional text."""
             logger.error(f"Error in semantic sectioning: {e}")
             # Fallback: create simple sections based on text length
             lines = [line for line in enumerated_text.split('\n') if line.strip()]
-            section_size = max(10, len(lines) // 3)  # At least 10 sentences per section
+            section_size = max(10, len(lines) // 3)  
             sections = []
             
             for i in range(0, len(lines), section_size):
@@ -336,14 +338,11 @@ Generate a contextual header for this section:"""
         """
         logger.info("Starting semantic chunking process...")
         
-        # Step 1: Create enumerated text
         enumerated_text, pages_map = self.chunk_and_enumerate_sentences(pdf_result)
         combined_text = pdf_result["combined_text"]
-        
-        # Step 2: Get semantic sections using LLM
+
         sections = self.get_semantic_sections(enumerated_text, document_title)
         
-        # Step 3: Process each section
         all_chunks = []
         
         for i, section in enumerate(sections):
@@ -435,25 +434,156 @@ Generate a contextual header for this section:"""
         logger.info(f"Saved {len(chunks)} chunks to {output_path}")
 
 
-def chunks(pdf_path: str) -> Dict[str, Any]:
-    
 
-# Example usage function
+def get_chunks(pdf_path: str, document_title: str = None, max_chunk_size: int = 800) -> Tuple[List[Dict], List[Document]]:
+    """
+    Get semantically split chunks from a PDF file.
+    Can be used in another module to get chunksin List[Dict] format and langchain docs also
+    This function processes a PDF file and returns semantically coherent chunks
+    with contextual headers for improved RAG retrieval performance.
+    
+    Args:
+        pdf_path (str): Path to the PDF file to process
+        document_title (str, optional): Title of the document for better context.
+                                      If None, will extract from filename.
+        max_chunk_size (int, optional): Maximum size for each chunk in characters.
+                                      Defaults to 800.
+    
+    Returns:
+        List[Dict]: List of chunk dictionaries with the following structure:
+            {
+                "chunk_id": str,
+                "content": str,  # Full content with contextual header
+                "original_content": str,  # Content without header
+                "section_title": str,
+                "page_numbers": List[int],
+                "start_sentence": int,
+                "end_sentence": int,
+                "contextual_header": str,
+                "content_length": int
+            }
+        Langchaimn documents in format List[Document]
+    """
+
+    if not pdf_path:
+        raise ValueError("PDF path cannot be empty")
+    
+    pdf_path = Path(pdf_path)
+    if not pdf_path.exists():
+        raise FileNotFoundError(f"PDF file not found: {pdf_path}")
+    
+    if not pdf_path.suffix.lower() == '.pdf':
+        raise ValueError(f"File must be a PDF, got: {pdf_path.suffix}")
+
+    if document_title is None:
+        document_title = pdf_path.stem.replace('_', ' ').replace('-', ' ').title()
+    
+    try:
+        logger.info(f"Processing PDF: {pdf_path}")
+        logger.info(f"Document title: {document_title}")
+        
+        chunker = SemanticChunker(max_chunk_size=max_chunk_size)
+        
+        pdf_result = process_pdf(str(pdf_path))
+        logger.info("PDF extraction succesful")
+        # Validate PDF processing result
+        if not pdf_result or not pdf_result.get("combined_text"):
+            raise ValueError("PDF processing failed - no text extracted")
+        
+        # Process the document with semantic chunking
+        chunks = chunker.process_document(pdf_result, document_title=document_title)
+        langchain_docs = chunker.chunks_to_langchain_documents(chunks)
+        
+        # Convert SemanticChunk objects to dictionaries
+        chunks_dict = []
+        for chunk in chunks:
+            chunk_dict = {
+                "chunk_id": chunk.chunk_id,
+                "content": chunk.content,
+                "original_content": chunk.original_content,
+                "section_title": chunk.section_title,
+                "page_numbers": chunk.page_numbers,
+                "start_sentence": chunk.start_sentence,
+                "end_sentence": chunk.end_sentence,
+                "contextual_header": chunk.contextual_header,
+                "content_length": len(chunk.content),
+                "original_content_length": len(chunk.original_content),
+                "source_file": str(pdf_path),
+                "document_title": document_title
+            }
+            chunks_dict.append(chunk_dict)
+        
+        logger.info(f"Successfully created {len(chunks_dict)} semantic chunks from {pdf_path}")
+        return chunks_dict, langchain_docs
+        
+    except FileNotFoundError:
+        raise
+    except ValueError:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing PDF {pdf_path}: {e}")
+        raise Exception(f"Failed to process PDF: {e}") from e
+
+# try:
+#     chunks, Langchain_docs = get_chunks(
+#             "C:/Users/tejup/Downloads/extraction_purpose2.pdf",
+#             document_title="Sample Document",
+#             max_chunk_size=800
+#         )
+#     logger.info("success!")
+
+# except:
+#     raise ValueError("Failed")
+
+# chunk = chunks[0]
+# print(chunk.get("section_title"))
+
+def get_chunks_batch(pdf_paths: List[str], max_chunk_size: int = 800) -> Dict[str, List[Dict]]:
+    """
+    Process multiple PDF files and return chunks for each.
+    
+    Args:
+        pdf_paths (List[str]): List of PDF file paths to process
+        max_chunk_size (int, optional): Maximum chunk size. Defaults to 800.
+    
+    Returns:
+        Dict[str, List[Dict]]: Dictionary with filename as key and chunks as value
+        
+    Example:
+        >>> files = ["doc1.pdf", "doc2.pdf"]
+        >>> results = get_chunks_batch(files)
+        >>> for filename, chunks in results.items():
+        ...     print(f"{filename}: {len(chunks)} chunks")
+    """
+    results = {}
+    failed_files = []
+    
+    for pdf_path in pdf_paths:
+        try:
+            chunks = get_chunks(pdf_path, max_chunk_size=max_chunk_size)
+            filename = Path(pdf_path).name
+            results[filename] = chunks
+        except Exception as e:
+            logger.error(f"Failed to process {pdf_path}: {e}")
+            failed_files.append(pdf_path)
+    
+    if failed_files:
+        logger.warning(f"Failed to process {len(failed_files)} files: {failed_files}")
+    
+    return results
+
 def main():
-    """Example usage of the SemanticChunker"""
     
-
     chunker = SemanticChunker(max_chunk_size=800)
     
     pdf_result = process_pdf("C:/Users/tejup/Downloads/extraction_purpose2.pdf")
-    # Process the document
+
     chunks = chunker.process_document(pdf_result, document_title="Sample Document")
     
-    # Convert to LangChain documents for future RAG use
+    # for future RAG use
     langchain_docs = chunker.chunks_to_langchain_documents(chunks)
     
-    # Save chunks for inspection
-    chunker.save_chunks_to_json(chunks, "semantic_chunks.json")
+    chunker.save_chunks_to_json(chunks, "base_pipeline/semantic_chunks.json")
     
     print(f"Created {len(chunks)} semantic chunks")
     print(f"Converted to {len(langchain_docs)} LangChain documents")
