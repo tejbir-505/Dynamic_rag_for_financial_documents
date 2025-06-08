@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from pdf_extracter import process_pdf 
 
 import nltk
-# nltk.data.path  
+
 nltk.download('punkt_tab', download_dir='punkt_tab')
 nltk.data.path.append('punkt_tab')
 from nltk.tokenize import sent_tokenize
@@ -105,7 +105,7 @@ Instructions:
 5. For each section, provide:
    - The starting sentence number
    - The ending sentence number
-   - A short but descriptive title that reflects the section’s main theme
+   - A short but descriptive title that reflects the chunk's main theme
 6. Ensure the entire document is covered without overlaps between sections.
 
 Return your output strictly in the following JSON format:
@@ -314,7 +314,7 @@ Generate a contextual header for this section:"""
                 chunk = SemanticChunk(
                     content=f"{contextual_header}\n\n{chunk_text}",
                     section_title=section['title'],
-                    page_numbers=page_numbers,  # All chunks inherit section's page numbers
+                    page_numbers=page_numbers,  
                     start_sentence=section['start_sentence'],
                     end_sentence=section['end_sentence'],
                     chunk_id=f"section_{section_index}_chunk_{i}",
@@ -414,6 +414,10 @@ Generate a contextual header for this section:"""
         """
         chunks_data = []
         
+        # Ensure the output directory exists
+        output_file_path = Path(output_path)
+        output_file_path.parent.mkdir(parents=True, exist_ok=True)
+        
         for chunk in chunks:
             chunk_data = {
                 "chunk_id": chunk.chunk_id,
@@ -428,10 +432,11 @@ Generate a contextual header for this section:"""
             }
             chunks_data.append(chunk_data)
         
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_file_path, 'w', encoding='utf-8') as f:
             json.dump(chunks_data, f, indent=2, ensure_ascii=False)
         
-        logger.info(f"Saved {len(chunks)} chunks to {output_path}")
+        logger.info(f"Saved {len(chunks)} chunks to {output_file_path}")
+
 
 
 
@@ -485,7 +490,7 @@ def get_chunks(pdf_path: str, document_title: str = None, max_chunk_size: int = 
         chunker = SemanticChunker(max_chunk_size=max_chunk_size)
         
         pdf_result = process_pdf(str(pdf_path))
-        logger.info("PDF extraction succesful")
+        logger.info("✅ PDF extraction succesful")
         # Validate PDF processing result
         if not pdf_result or not pdf_result.get("combined_text"):
             raise ValueError("PDF processing failed - no text extracted")
@@ -513,7 +518,7 @@ def get_chunks(pdf_path: str, document_title: str = None, max_chunk_size: int = 
             }
             chunks_dict.append(chunk_dict)
         
-        logger.info(f"Successfully created {len(chunks_dict)} semantic chunks from {pdf_path}")
+        logger.info(f"✅ Successfully created {len(chunks_dict)} semantic chunks from {pdf_path}")
         return chunks_dict, langchain_docs
         
     except FileNotFoundError:
@@ -583,7 +588,7 @@ def main():
     # for future RAG use
     langchain_docs = chunker.chunks_to_langchain_documents(chunks)
     
-    chunker.save_chunks_to_json(chunks, "base_pipeline/semantic_chunks.json")
+    chunker.save_chunks_to_json(chunks, "semantic_chunks.json")
     
     print(f"Created {len(chunks)} semantic chunks")
     print(f"Converted to {len(langchain_docs)} LangChain documents")

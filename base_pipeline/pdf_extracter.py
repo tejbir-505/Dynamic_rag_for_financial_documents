@@ -4,8 +4,6 @@ import logging
 from typing import List, Dict, Any, Optional
 import json
 # from dotenv import load_dotenv
-
-# Load environment variables from .env file
 # load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -61,7 +59,7 @@ def get_table_stats(table: List[List[Any]]) -> Dict[str, Any]:
     if not non_empty_rows:
         return {"col_count": 0, "row_count": 0, "empty": True}
     
-    # Find the maxm column count
+    # max column count
     col_count = max(len(row) for row in non_empty_rows)
     
     # for header analysis
@@ -136,7 +134,7 @@ def format_table_with_tags(
     return f"<TABLE_START id='{table_id}' page='{start_page}' rows='{len(filtered_rows)}' cols='{max_cols}'>\n{formatted_table}\n<TABLE_END id='{table_id}'>"
 
 
-# if a table on this page is a continuation of the previous one
+# find if a table on this page is a continuation of the previous one
 
 def is_continuation_of(prev_table_stats: Optional[Dict[str, Any]], current_table: List[List[Any]]) -> bool:
     """

@@ -42,8 +42,7 @@ class EmbeddingManager:
         self.collection_name = collection_name
         self.persist_directory = persist_directory
         self.embedding_model = embedding_model
-        
-        # Get Jina AI API key from environment
+
         self.jina_api_key = os.getenv("JINA_API_KEY")
         if not self.jina_api_key:
             raise ValueError("JINA_API_KEY not found in environment variables")
@@ -56,8 +55,7 @@ class EmbeddingManager:
             path=persist_directory,
             settings=Settings(anonymized_telemetry=False)
         )
-        
-        # Create or get collection
+
         try:
             self.collection = self.client.get_collection(name=collection_name)
             logger.info(f"Loaded existing collection: {collection_name}")
@@ -124,7 +122,7 @@ class EmbeddingManager:
         section_title = chunk.get("section_title", "Unknown Section")
         full_content = chunk.get("full_content", "")
         
-        # Strategy 1 format: Section title + content
+        # format: Section title + content
         enhanced_content = f"Section: {section_title}\n\nContent: {full_content}"
         
         return enhanced_content
@@ -212,12 +210,13 @@ class EmbeddingManager:
         logger.info(f"Processing PDF: {pdf_path}")
         
         try:
-            # Get chunks from your chunker module
+            # Get chunks from chunker.py module
             chunks_dict, langchain_docs = get_chunks(
                 pdf_path=pdf_path,
                 document_title=document_title,
                 max_chunk_size=max_chunk_size
             )
+            logger.info("✅ Chunking succesfull")
             for i, chunk in enumerate(chunks_dict[:10]):
                 print(f"Chunk {i}: ID={chunk.get('chunk_id')}, Section={chunk.get('section_title')}")
             
@@ -226,9 +225,9 @@ class EmbeddingManager:
                 return 0
             
             # Process chunks in batches
-            # self.process_chunks_batch(chunks_dict)
+            self.process_chunks_batch(chunks_dict)
             
-            logger.info(f"Successfully embedded {len(chunks_dict)} chunks from {pdf_path}")
+            logger.info(f"✅ Successfully embedded {len(chunks_dict)} chunks from {pdf_path}")
             return len(chunks_dict)
             
         except Exception as e:
@@ -242,8 +241,9 @@ class EmbeddingManager:
         where_filter: Optional[Dict] = None
     ) -> List[Dict[str, Any]]:
         """
-        Search for similar chunks using semantic similarity
-        
+        This is vanialla retriever function which retrieve chunks relevant to query by simple comparing cosine similarity.
+        Set up this function to see if embedding class is working. 
+        Can be used for actual retrieval though.
         Args:
             query: Search query
             n_results: Number of results to return
@@ -253,7 +253,6 @@ class EmbeddingManager:
             List of similar chunks with metadata
         """
         try:
-            # Get query embedding
             query_embedding = self.get_embeddings([query])[0]
             
             # Search in Chroma
@@ -343,16 +342,16 @@ class EmbeddingManager:
 
 
 # Example usage and testing functions
+
+
 def example_usage():
     """Example of how to use the embedding manager"""
-    
-    # Initialize embedding manager
+
     embedding_manager = EmbeddingManager(
-        collection_name="my_documents",
-        persist_directory="./my_vector_db"
+        collection_name="document_chunks",
+        persist_directory="./chroma_db"
     )
-    
-    # Process a PDF document
+
     pdf_path = "C:/Users/tejup/Downloads/extraction_purpose2.pdf"
     num_chunks = embedding_manager.embed_pdf_document(
         pdf_path=pdf_path,
@@ -360,27 +359,30 @@ def example_usage():
     )
     
     print(f"Processed {num_chunks} chunks")
+
+    # query = "who was president and chied executive officer in 2012"
+    # results = embedding_manager.search_similar_chunks(
+    #     query=query,
+    #     n_results=3
+    # )
+
+    # for i, result in enumerate(results, 1):
+    #     print(f"\n--- Result {i} ---")
+    #     print(f"Chunk ID: {result['chunk_id']}")
+    #     print(f"Section: {result['section_title']}")
+    #     print(f"Pages: {result['page_numbers']}")
+    #     print(f"Similarity: {result['similarity_score']:.3f}")
+    #     print(f"Content preview: {result['content'][:200]}...")
     
-    # Search for similar content
-    query = "who was president and chied executive officer in 2012"
-    results = embedding_manager.search_similar_chunks(
-        query=query,
-        n_results=3
-    )
-    
-    # Display results
-    for i, result in enumerate(results, 1):
-        print(f"\n--- Result {i} ---")
-        print(f"Chunk ID: {result['chunk_id']}")
-        print(f"Section: {result['section_title']}")
-        print(f"Pages: {result['page_numbers']}")
-        print(f"Similarity: {result['similarity_score']:.3f}")
-        print(f"Content preview: {result['content'][:200]}...")
-    
-    # Get collection statistics
     stats = embedding_manager.get_collection_stats()
     print(f"\nCollection Stats: {stats}")
 
 
 if __name__ == "__main__":
     example_usage()
+
+# embedding_manager = EmbeddingManager(
+#     collection_name="document_chunks",
+#     persist_directory="./chroma_db"
+# )
+# embedding_manager.delete_collection()
