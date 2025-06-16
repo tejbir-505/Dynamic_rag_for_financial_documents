@@ -42,8 +42,6 @@ class SemanticChunker:
     
     def __init__(self, model_name: str = "llama-3.3-70b-versatile", max_chunk_size: int = 1000):
         """
-        Initialize the semantic chunker
-        
         Args:
             model_name: Groq model name for LLM
             max_chunk_size: Maximum size for final chunks in characters
@@ -67,7 +65,7 @@ class SemanticChunker:
         
     def chunk_and_enumerate_sentences(self, pdf_result: Dict[str, Any]) -> Tuple[str, List[Dict]]:
         """
-        Takes the result from process_pdf, and returns sentence-enumerated text.
+        Enumerate the sentence
         Format: <1> Sentence one. <2> Sentence two.
         """
         combined_text = pdf_result["combined_text"]
@@ -86,13 +84,6 @@ class SemanticChunker:
     def get_semantic_sections(self, enumerated_text: str, document_title: str = "") -> List[Dict]:
         """
         Use LLM to identify semantic sections in the enumerated text
-        
-        Args:
-            enumerated_text: Text with sentence numbers
-            document_title: Title of the document for context
-            
-        Returns:
-            List of section dictionaries with start_line, end_line, and title
         """
         
         system_prompt = """You are an expert document analyzer. Your task is to identify semantically cohesive sections in a document.
@@ -133,10 +124,8 @@ Only return the JSON array, no additional explanation or commentary."""
         
         try:
             response = self.llm.invoke(messages)
-            # Extract JSON from response
             content = response.content.strip()
             
-            # Try to find JSON in the response
             if content.startswith('['):
                 sections = json.loads(content)
             else:
@@ -145,7 +134,6 @@ Only return the JSON array, no additional explanation or commentary."""
                 if json_match:
                     sections = json.loads(json_match.group(1))
                 else:
-                    # Try to find JSON array in the text
                     json_match = re.search(r'\[.*\]', content, re.DOTALL)
                     if json_match:
                         sections = json.loads(json_match.group(0))
@@ -157,6 +145,7 @@ Only return the JSON array, no additional explanation or commentary."""
             
         except Exception as e:
             logger.error(f"Error in semantic sectioning: {e}")
+
             # Fallback: create simple sections based on text length
             lines = [line for line in enumerated_text.split('\n') if line.strip()]
             section_size = max(10, len(lines) // 3)  
@@ -180,6 +169,7 @@ Only return the JSON array, no additional explanation or commentary."""
         
         for line in lines:
             if line.strip():  # Skip empty lines
+
                 # Extract sentence number
                 match = re.match(r'<(\d+)>', line)
                 if match:
@@ -490,7 +480,7 @@ def get_chunks(pdf_path: str, document_title: str = None, max_chunk_size: int = 
         chunker = SemanticChunker(max_chunk_size=max_chunk_size)
         
         pdf_result = process_pdf(str(pdf_path))
-        logger.info("✅ PDF extraction succesful")
+        logger.info(" PDF extraction succesful")
         # Validate PDF processing result
         if not pdf_result or not pdf_result.get("combined_text"):
             raise ValueError("PDF processing failed - no text extracted")
@@ -518,7 +508,7 @@ def get_chunks(pdf_path: str, document_title: str = None, max_chunk_size: int = 
             }
             chunks_dict.append(chunk_dict)
         
-        logger.info(f"✅ Successfully created {len(chunks_dict)} semantic chunks from {pdf_path}")
+        logger.info(f" Successfully created {len(chunks_dict)} semantic chunks from {pdf_path}")
         return chunks_dict, langchain_docs
         
     except FileNotFoundError:
@@ -577,6 +567,8 @@ def get_chunks_batch(pdf_paths: List[str], max_chunk_size: int = 800) -> Dict[st
     
     return results
 
+
+
 def main():
     
     chunker = SemanticChunker(max_chunk_size=800)
@@ -584,8 +576,6 @@ def main():
     pdf_result = process_pdf("C:/Users/tejup/Downloads/extraction_purpose2.pdf")
 
     chunks = chunker.process_document(pdf_result, document_title="Sample Document")
-    
-    # for future RAG use
     langchain_docs = chunker.chunks_to_langchain_documents(chunks)
     
     chunker.save_chunks_to_json(chunks, "semantic_chunks.json")
@@ -595,5 +585,5 @@ def main():
     
     return chunks, langchain_docs
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

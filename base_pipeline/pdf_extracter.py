@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def clean_cell(cell) -> str:
     """
-    Convert a cell value to a clean string, handling None values and whitespace.
+    Convert a cell value to a clean string, handling none values and whitespace.
     """
     if cell is None:
         return ""
@@ -41,8 +41,7 @@ def clean_table(table: List[List[Any]]) -> List[List[str]]:
 
 def get_table_stats(table: List[List[Any]]) -> Dict[str, Any]:
     """
-    Analyzes a table and returns useful statistics about it.
-    Now handles None values properly.
+    Analyzes a table and returns useful statistics about it
     """
     if not table:
         return {"col_count": 0, "row_count": 0, "empty": True}
@@ -59,16 +58,16 @@ def get_table_stats(table: List[List[Any]]) -> Dict[str, Any]:
     if not non_empty_rows:
         return {"col_count": 0, "row_count": 0, "empty": True}
     
-    # max column count
+    # Max column count
     col_count = max(len(row) for row in non_empty_rows)
     
-    # for header analysis
+    # For header analysis
     first_row = non_empty_rows[0]
     
-    # if first row looks like a header
+    # If first row looks like a header
     has_header_format = False
     
-    # If first row cells are mostly text (no numbers) and other rows have numbers, likely a header
+    # If first row cells are mostly text and other rows have numbers, likely a header
     first_row_text_cells = 0
     for cell in first_row:
         if cell and not any(c.isdigit() for c in cell):
@@ -88,7 +87,7 @@ def get_table_stats(table: List[List[Any]]) -> Dict[str, Any]:
     }
 
 
-# table to formatted text with tags
+# Table to formatted text with tags
 
 def format_table_with_tags(
     table_rows: List[List[str]],
@@ -97,14 +96,13 @@ def format_table_with_tags(
 ) -> str:
     """
     Format table with start/end tags and structured table data.
-    No LLM processing - just clean formatting.
     """
     if not table_rows:
         return f"<TABLE_START id='{table_id}' page='{start_page}'>\n[Empty table]\n<TABLE_END id='{table_id}'>"
 
     cleaned_rows = clean_table(table_rows)
     
-    # filter out empty rows
+    # Filter out empty rows
     filtered_rows = [row for row in cleaned_rows if any(cell for cell in row)]
     
     if not filtered_rows:
@@ -134,7 +132,7 @@ def format_table_with_tags(
     return f"<TABLE_START id='{table_id}' page='{start_page}' rows='{len(filtered_rows)}' cols='{max_cols}'>\n{formatted_table}\n<TABLE_END id='{table_id}'>"
 
 
-# find if a table on this page is a continuation of the previous one
+# To find if a table on this page is a continuation of the previous one
 
 def is_continuation_of(prev_table_stats: Optional[Dict[str, Any]], current_table: List[List[Any]]) -> bool:
     """
@@ -157,7 +155,7 @@ def is_continuation_of(prev_table_stats: Optional[Dict[str, Any]], current_table
     if current_stats["has_header_format"]:
         return False
     
-    # if previous table didn't have headers and current one does,it's probably a new table
+    # If previous table didn't have headers and current one does,it's probably a new table
     if not prev_table_stats.get("has_header_format", False) and current_stats["has_header_format"]:
         return False
     
@@ -184,7 +182,7 @@ def sort_tables_by_position(page, tables):
         table_positions = []
         for i, found_table in enumerate(found_tables):
             try:
-                # y1 is the top y-coordinate (higher values = lower on page in PDF coordinates)
+                # y1 is the top y-coordinate (higher values = lower on page in pdf coordinates)
                 y_pos = found_table.bbox[1] if found_table.bbox else i
                 table_positions.append((i, y_pos))
             except (IndexError, AttributeError):
@@ -343,7 +341,7 @@ def process_pdf(pdf_path: str) -> Dict[str, Any]:
                         continue
 
                 
-                # 5. Add page text as a chunk
+                # Add page text as a chunk
                 
                 if raw_text.strip():
                     combined_chunks.append({
@@ -414,59 +412,56 @@ def process_pdf(pdf_path: str) -> Dict[str, Any]:
 
 
 # Save outputs 
-def save_outputs(
-    combined_text: str,
-    pages_map: List[Dict[str, Any]],
-    text_path: str = "extracted_full_text.txt",
-    map_path: str = "pages_map.json"
-) -> None:
-    try:
-        with open(text_path, "w", encoding="utf-8") as f:
-            f.write(combined_text)
-        logger.info(f"Combined text saved to {text_path}")
-    except Exception as e:
-        logger.error(f"Failed writing combined text: {e}")
+# def save_outputs(
+#     combined_text: str,
+#     pages_map: List[Dict[str, Any]],
+#     text_path: str = "extracted_full_text.txt",
+#     map_path: str = "pages_map.json"
+# ) -> None:
+#     try:
+#         with open(text_path, "w", encoding="utf-8") as f:
+#             f.write(combined_text)
+#         logger.info(f"Combined text saved to {text_path}")
+#     except Exception as e:
+#         logger.error(f"Failed writing combined text: {e}")
 
-    try:
-        with open(map_path, "w", encoding="utf-8") as f:
-            json.dump(pages_map, f, indent=2, ensure_ascii=False)
-        logger.info(f"Pages map saved to {map_path}")
-    except Exception as e:
-        logger.error(f"Failed writing pages map: {e}")
+#     try:
+#         with open(map_path, "w", encoding="utf-8") as f:
+#             json.dump(pages_map, f, indent=2, ensure_ascii=False)
+#         logger.info(f"Pages map saved to {map_path}")
+#     except Exception as e:
+#         logger.error(f"Failed writing pages map: {e}")
 
 
-def main():
+# def main():
+#     pdf_path = os.environ.get("PDF_PATH", "C:/Users/tejup/Downloads/extraction_purpose2.pdf")
     
-    pdf_path = os.environ.get("PDF_PATH", "C:/Users/tejup/Downloads/extraction_purpose2.pdf")
+#     print(f"Processing PDF: {pdf_path}")
+#     result = process_pdf(pdf_path)
     
-    print(f"Processing PDF: {pdf_path}")
-    result = process_pdf(pdf_path)
-    
-    # Check if processing was successful
-    if "error" in result:
-        logger.error(f"PDF processing failed: {result['error']}")
-        print(f"ERROR: {result['error']}")
-        return
-    save_outputs(
-        combined_text=result["combined_text"],
-        pages_map=result["pages_map"]
-    )
+#     if "error" in result:
+#         logger.error(f"PDF processing failed: {result['error']}")
+#         print(f"ERROR: {result['error']}")
+#         return
+#     save_outputs(
+#         combined_text=result["combined_text"],
+#         pages_map=result["pages_map"]
+#     )
 
  
-    print("\n=== PROCESSING SUMMARY ===")
-    print(f"Total characters in combined_text: {len(result['combined_text'])}")
-    print(f"Total chunks recorded: {len(result['chunks'])}")
-    print(f"Total page‐map entries: {len(result['pages_map'])}")
+#     print("\nPROCESSING SUMMARY")
+#     print(f"Total characters in combined_text: {len(result['combined_text'])}")
+#     print(f"Total chunks recorded: {len(result['chunks'])}")
+#     print(f"Total page‐map entries: {len(result['pages_map'])}")
     
-    # Count tables
-    table_count = sum(1 for chunk in result['chunks'] if chunk['chunk_type'] == 'table')
-    text_count = sum(1 for chunk in result['chunks'] if chunk['chunk_type'] == 'text')
-    print(f"Tables extracted: {table_count}")
-    print(f"Text chunks extracted: {text_count}")
+#     table_count = sum(1 for chunk in result['chunks'] if chunk['chunk_type'] == 'table')
+#     text_count = sum(1 for chunk in result['chunks'] if chunk['chunk_type'] == 'text')
+#     print(f"Tables extracted: {table_count}")
+#     print(f"Text chunks extracted: {text_count}")
     
-    print("\n=== PREVIEW OF EXTRACTED TEXT ===")
-    preview_length = min(500, len(result["combined_text"]))
-    print(result["combined_text"][:preview_length] + ("..." if preview_length < len(result["combined_text"]) else ""))
+#     print("\nPREVIEW OF EXTRACTED TEXT")
+#     preview_length = min(500, len(result["combined_text"]))
+#     print(result["combined_text"][:preview_length] + ("..." if preview_length < len(result["combined_text"]) else ""))
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

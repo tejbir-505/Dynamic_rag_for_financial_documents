@@ -327,10 +327,8 @@ class EmbeddingManager:
     
     def delete_collection(self) -> bool:
         """
-        Delete the entire collection (use with caution!)
-        
-        Returns:
-            True if successful
+        Delete the entire collection
+        be careful :)
         """
         try:
             self.client.delete_collection(name=self.collection_name)
@@ -341,7 +339,6 @@ class EmbeddingManager:
             return False
 
 
-# Example usage and testing functions
 
 
 def example_usage():
@@ -378,8 +375,8 @@ def example_usage():
     print(f"\nCollection Stats: {stats}")
 
 
-if __name__ == "__main__":
-    example_usage()
+# if __name__ == "__main__":
+#     example_usage()
 
 # embedding_manager = EmbeddingManager(
 #     collection_name="document_chunks",

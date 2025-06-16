@@ -496,35 +496,34 @@ def process_task_planner_subquery(subquery: Dict) -> Dict:
     
     if subquery["tool"] == "financial_data":
         parameters = subquery["parameters"]
-        result = parser.parse_task_planner_request(parameters)
+        results = parser.parse_task_planner_request(parameters)
         
         return {
             "subquery_id": subquery["subquery_id"],
+            "tool": "financial_data",
             "output_key": subquery["output_key"],
-            "result": result,
-            "status": "success" if not any("error" in str(v) for v in result.get("data", {}).values()) else "partial_success"
+            "results": results,
+            "status": "success" if not any("error" in str(v) for v in results.get("data", {}).values()) else "partial_success"
         }
     
     return {"error": "Not a financial_data subquery"}
-import pprint
 
 
-if __name__ == "__main__":
-    sample_subquery = {
-        "subquery_id": "q1",
-        "subquery": "Get Apple comprehensive financial metrics including ratios and company info",
-        "tool": "financial_data",
-        "depends_on": [],
-        "output_key": "apple_comprehensive_analysis",
-        "priority": "high",
-        "parameters": {
-            "ticker": "TSLA",
-            "timeframe": "2022-01-01 to 2023-12-31",
-            "metric": "net_income,profit_margin,pe_ratio,beta,company_info,current_price"
-        }
-    }
-    # a = FinancialDataParser()
-    result = process_task_planner_subquery(sample_subquery)
-    print(result)
+# if __name__ == "__main__":
+#     sample_subquery = {
+#         "subquery_id": "q1",
+#         "subquery": "Get Apple comprehensive financial metrics including ratios and company info",
+#         "tool": "financial_data",
+#         "depends_on": [],
+#         "output_key": "apple_comprehensive_analysis",
+#         "priority": "high",
+#         "parameters": {
+#             "ticker": "AAPL",
+#             "timeframe": "2022-01-01 to 2023-12-31",
+#             "metric": "net_income,profit_margin,pe_ratio,beta,company_info,current_price"
+#         }
+#     }
+#     result = process_task_planner_subquery(sample_subquery)
+#     print(result)
 
-    print(" Result Keys:", list(result['result']['data'].keys()))
+#     print(" Result Keys:", list(result['results']['data'].keys()))
